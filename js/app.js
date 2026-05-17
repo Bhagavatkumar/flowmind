@@ -208,7 +208,11 @@ function renderKanban() {
     const container = document.getElementById(`cards-${status}`);
     document.getElementById(`count-${status}`).textContent = cards.length;
 
-    container.innerHTML = cards.map(t => `
+    container.innerHTML = cards.map(t => {
+      const nextStatus = t.status === "todo" ? "inprogress" : t.status === "inprogress" ? "done" : "todo";
+      const nextLabel  = t.status === "todo" ? "▶ Start" : t.status === "inprogress" ? "✓ Done" : "↩ Reopen";
+      const nextColor  = t.status === "todo" ? "#f0b429" : t.status === "inprogress" ? "#00d4aa" : "#9998a8";
+      return `
       <div class="kanban-card"
            draggable="true"
            ondragstart="dragStart(event, ${t.id})"
@@ -218,8 +222,26 @@ function renderKanban() {
           <span class="kc-priority pri-${t.priority}">${t.priority}</span>
           <span class="kc-time">${t.time}</span>
         </div>
-      </div>`).join("");
+        <button class="kc-action-btn"
+                style="color:${nextColor};border-color:${nextColor}22;background:${nextColor}11"
+                onclick="cycleStatus(${t.id},'${nextStatus}')">${nextLabel}</button>
+      </div>`;
+    }).join("");
   });
+}
+
+/* ─── CYCLE STATUS (click button on card) ───────────────── */
+function cycleStatus(id, newStatus) {
+  const task = APP.tasks.find(t => t.id === id);
+  if (!task) return;
+  task.status = newStatus;
+  renderKanban();
+  renderTimeBlocks();
+  renderStats();
+  updateAnalytics();
+  recalcFocusScore();
+  const label = newStatus === "inprogress" ? "In Progress" : newStatus === "done" ? "Done ✅" : "To Do";
+  showToast(`Moved to ${label}`);
 }
 
 /* ─── DRAG & DROP ────────────────────────────────────────── */
